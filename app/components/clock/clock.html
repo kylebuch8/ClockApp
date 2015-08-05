@@ -1,0 +1,83 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<script src="../../bower_components/moment/min/moment.min.js"></script>
+<script src="../../bower_components/socket.io-client/socket.io.js"></script>
+
+<dom-module id="clock-app">
+    <style>
+
+    @font-face {
+        font-family: 'Roboto';
+        src: url('fonts/Roboto-Regular.ttf')  format('truetype');
+    }
+
+    :host {
+        display: -webkit-flex;
+        display: flex;
+        height: 100%;
+        background: #2196F3;
+        color: white;
+        -webkit-align-items: center;
+        align-items: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+        font-size: 100px;
+        text-shadow: 1px 1px 2px #0D47A1;
+        font-family: 'Roboto', serif;
+    }
+
+    </style>
+
+    <template>
+        <span>{{time}}</span>
+        <!-- <span>{{countdown}}</span> -->
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is: 'clock-app',
+
+        created: function () {
+            var self = this,
+                now = moment().format('HH:mm'),
+                interval = setInterval(function () {
+                    now = moment().format('h:mm'),
+                    self.time = now;
+                }, 1000);
+
+
+            var socket = io('http://localhost:8080', {
+                'reconnectionDelay': 1000,
+                'reconnectionDelayMax' : 50000
+            });
+
+            socket.on('alarm', function (data) {
+                var start = moment(),
+                    end = moment(data.date);
+
+                var duration = moment.duration(end.diff(start)),
+                    secondsFromNow = parseInt(Math.ceil(duration.asSeconds(), 10)) * 1000;
+
+                console.log(secondsFromNow);
+
+                var alarm = setTimeout(function () {
+                    console.log('brrrrrrrrring!!!!');
+                    clearTimeout(alarm);
+                    alarm = null;
+                }, secondsFromNow);
+
+                var timer = setInterval(function () {
+                    var now = moment(),
+                        duration = moment.duration(end.diff(now));
+
+                    self.countdown = parseInt(Math.ceil(duration.asSeconds(), 10));
+
+                    if (!alarm) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                }, 100);
+            });
+        }
+    });
+</script>
