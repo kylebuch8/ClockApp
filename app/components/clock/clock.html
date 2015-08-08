@@ -71,6 +71,14 @@
             is: 'clock-app',
 
             properties: {
+                alarms: {
+                    type: Array,
+                    value: []
+                },
+                colors: {
+                    type: Array,
+                    value: generateColors('green', 'red', 101)
+                },
                 updateClockInterval: {
                     type: Number,
                     value: 1000
@@ -92,7 +100,6 @@
             ready: function () {
                 var self = this,
                     now = moment().format('HH:mm'),
-                    colors = generateColors('green', 'red', 101),
                     interval = setInterval(function () {
                         now = moment().format('h:mm'),
                         self.time = now;
@@ -103,43 +110,69 @@
                     'reconnectionDelayMax' : this.socketReconnectionDelayMax
                 });
 
-                socket.on('alarm', function (data) {
-                    var start = moment(),
-                        end = moment(data.date),
-                        duration = moment.duration(end.diff(start)),
-                        secondsFromNow = parseInt(Math.ceil(duration.asSeconds(), 10)),
-                        millisecondsFromNow = secondsFromNow * 1000;
-
-                    var alarm = setTimeout(function () {
-                        console.log('brrrrrrrrring!!!!');
-                        clearTimeout(alarm);
-                        alarm = null;
-
-                        self.$.toast.classList.add('show');
-                    }, millisecondsFromNow);
-
-                    var timer = setInterval(function () {
-                        var now = moment(),
-                            duration = moment.duration(end.diff(now)),
-                            color;
-
-                        self.countdown = parseInt(Math.ceil(duration.asSeconds(), 10));
-
-                        /*
-                         * update the clocks background color with a color from the
-                         * colors array
-                         */
-                        color = colors[Math.floor((1 - self.countdown / secondsFromNow) * 100)];
-                        self.style.backgroundColor = color.toHexString();
-
-                        if (!alarm) {
-                            clearInterval(timer);
-                            timer = null;
-                        }
-                    }, self.timerInterval);
-                });
+                socket.on('alarm', this.addAlarm.bind(this));
+                socket.on('deleteAlarm', this.deleteAlarm.bind(this));
 
                 this.time = now;
+            },
+
+            addAlarm: function (data) {
+                var self = this,
+                    start = moment(),
+                    end = moment(data.date),
+                    duration = moment.duration(end.diff(start)),
+                    secondsFromNow = parseInt(Math.ceil(duration.asSeconds(), 10)),
+                    millisecondsFromNow = secondsFromNow * 1000;
+
+                var alarm = {
+                    id: data.id
+                };
+
+                alarm.alarmTimer = setTimeout(function () {
+                    clearTimeout(alarm.alarmTimer);
+                    alarm.alarmTimer = null;
+
+                    self.$.toast.classList.add('show');
+                }, millisecondsFromNow);
+
+                alarm.timer = setInterval(function () {
+                    var now = moment(),
+                        duration = moment.duration(end.diff(now)),
+                        color;
+
+                    self.countdown = parseInt(Math.ceil(duration.asSeconds(), 10));
+
+                    /*
+                     * update the clocks background color with a color from the
+                     * colors array
+                     */
+                    color = self.colors[Math.floor((1 - self.countdown / secondsFromNow) * 100)];
+                    self.style.backgroundColor = color.toHexString();
+
+                    if (!alarm.alarmTimer) {
+                        clearInterval(alarm.timer);
+                        alarm.timer = null;
+                    }
+                }, self.timerInterval);
+
+                this.push('alarms', alarm);
+            },
+
+            deleteAlarm: function (data) {
+                var i = 0,
+                    length = this.alarms.length,
+                    alarm;
+
+                for (i; i < length; i += 1) {
+                    if (this.alarms[i].id === data.id) {
+                        alarm = this.splice('alarms', i)[0];
+                        clearTimeout(alarm.alarmTimer);
+                        clearInterval(alarm.timer);
+                        this.clear();
+
+                        break;
+                    }
+                }
             },
 
             clear: function () {
