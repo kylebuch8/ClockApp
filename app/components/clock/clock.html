@@ -1,6 +1,8 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <script src="../../bower_components/socket.io-client/socket.io.js"></script>
+<script src="../../bower_components/tinycolor/tinycolor.js"></script>
+<script src="../../bower_components/tinygradient/tinygradient.js"></script>
 
 <dom-module id="clock-app">
     <style>
@@ -23,61 +25,127 @@
         font-size: 100px;
         text-shadow: 1px 1px 2px #0D47A1;
         font-family: 'Roboto', serif;
+        transition: background-color 1s ease-in-out;
+    }
+
+    .toast {
+        position: fixed;
+        padding: 16px;
+        right: 16px;
+        bottom: 16px;
+        font-size: 18px;
+        color: white;
+        cursor: pointer;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 999;
+        box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+        -webkit-transform: translate3d(0, 75px, 0);
+        transform: translate3d(0, 75px, 0);
+        -webkit-transition: -webkit-transform 200ms cubic-bezier(0.465, 0.183, 0.153, 0.946);
+        transition: transform 200ms cubic-bezier(0.465, 0.183, 0.153, 0.946);
+    }
+
+    .toast.show {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
     }
 
     </style>
 
     <template>
         <span>{{time}}</span>
-        <!-- <span>{{countdown}}</span> -->
+        <div id="toast" class="toast" on-tap="clear">Dismiss</div>
     </template>
 </dom-module>
 
 <script>
-    Polymer({
-        is: 'clock-app',
+    (function () {
+        function generateColors(startColor, endColor, steps) {
+            var gradient = tinygradient(startColor, endColor),
+                colors = gradient.hsv(steps, true);
 
-        created: function () {
-            var self = this,
-                now = moment().format('HH:mm'),
-                interval = setInterval(function () {
-                    now = moment().format('h:mm'),
-                    self.time = now;
-                }, 1000);
-
-
-            var socket = io('http://localhost:8080', {
-                'reconnectionDelay': 1000,
-                'reconnectionDelayMax' : 50000
-            });
-
-            socket.on('alarm', function (data) {
-                var start = moment(),
-                    end = moment(data.date);
-
-                var duration = moment.duration(end.diff(start)),
-                    secondsFromNow = parseInt(Math.ceil(duration.asSeconds(), 10)) * 1000;
-
-                console.log(secondsFromNow);
-
-                var alarm = setTimeout(function () {
-                    console.log('brrrrrrrrring!!!!');
-                    clearTimeout(alarm);
-                    alarm = null;
-                }, secondsFromNow);
-
-                var timer = setInterval(function () {
-                    var now = moment(),
-                        duration = moment.duration(end.diff(now));
-
-                    self.countdown = parseInt(Math.ceil(duration.asSeconds(), 10));
-
-                    if (!alarm) {
-                        clearInterval(timer);
-                        timer = null;
-                    }
-                }, 100);
-            });
+            return colors;
         }
-    });
+
+        Polymer({
+            is: 'clock-app',
+
+            properties: {
+                updateClockInterval: {
+                    type: Number,
+                    value: 1000
+                },
+                socketReconnectionDelay: {
+                    type: Number,
+                    value: 1000
+                },
+                socketReconnectionDelayMax: {
+                    type: Number,
+                    value: 50000
+                },
+                timerInterval: {
+                    type: Number,
+                    value: 100
+                }
+            },
+
+            ready: function () {
+                var self = this,
+                    now = moment().format('HH:mm'),
+                    colors = generateColors('green', 'red', 101),
+                    interval = setInterval(function () {
+                        now = moment().format('h:mm'),
+                        self.time = now;
+                    }, this.updateClockInterval);
+
+                var socket = io('http://localhost:8080', {
+                    'reconnectionDelay': this.socketReconnectionDelay,
+                    'reconnectionDelayMax' : this.socketReconnectionDelayMax
+                });
+
+                socket.on('alarm', function (data) {
+                    var start = moment(),
+                        end = moment(data.date),
+                        duration = moment.duration(end.diff(start)),
+                        secondsFromNow = parseInt(Math.ceil(duration.asSeconds(), 10)),
+                        millisecondsFromNow = secondsFromNow * 1000;
+
+                    var alarm = setTimeout(function () {
+                        console.log('brrrrrrrrring!!!!');
+                        clearTimeout(alarm);
+                        alarm = null;
+
+                        self.$.toast.classList.add('show');
+                    }, millisecondsFromNow);
+
+                    var timer = setInterval(function () {
+                        var now = moment(),
+                            duration = moment.duration(end.diff(now)),
+                            color;
+
+                        self.countdown = parseInt(Math.ceil(duration.asSeconds(), 10));
+
+                        /*
+                         * update the clocks background color with a color from the
+                         * colors array
+                         */
+                        color = colors[Math.floor((1 - self.countdown / secondsFromNow) * 100)];
+                        self.style.backgroundColor = color.toHexString();
+
+                        if (!alarm) {
+                            clearInterval(timer);
+                            timer = null;
+                        }
+                    }, self.timerInterval);
+                });
+
+                this.time = now;
+            },
+
+            clear: function () {
+                this.style.backgroundColor = null;
+                this.$.toast.classList.remove('show');
+            }
+        });
+    }());
 </script>
