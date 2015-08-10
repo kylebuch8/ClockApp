@@ -19,6 +19,7 @@
 
     <template>
         <iron-ajax
+            id="weatherAjax"
             auto
             url="http://api.wunderground.com/api/237c499a64ba2cec/conditions/q/NC/Apex.json"
             handle-as="json"
@@ -39,6 +40,17 @@
             location: String,
             currentTemp: String,
             icon: String
+        },
+
+        ready: function () {
+            var self = this;
+
+            /*
+             * get the weather every 30 minutes
+             */
+            setInterval(function () {
+                self.$.weatherAjax.generateRequest();
+            }, 1000 * 60 * 30);
         },
 
         handleWeatherResponse: function (event) {
