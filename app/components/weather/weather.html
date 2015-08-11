@@ -15,51 +15,107 @@
         justify-content: center;
     }
 
+    .t-shirt {
+        width: 200px;
+    }
+
     </style>
 
     <template>
         <iron-ajax
             id="weatherAjax"
             auto
-            url="http://api.wunderground.com/api/237c499a64ba2cec/conditions/q/NC/Apex.json"
+            url="http://api.wunderground.com/api/237c499a64ba2cec/conditions/forecast/q/NC/Apex.json"
             handle-as="json"
             on-response="handleWeatherResponse"></iron-ajax>
 
         <span>{{location}}</span>
         <h1>{{currentTemp}}</h1>
         <img src$="{{icon}}">
+        <h2>Clothes</h2>
+        <div>{{clothes.male.top}}</div>
+        <div>{{clothes.male.bottom}}</div>
+        <img class="t-shirt" src="icons/t-shirt.svg">
     </template>
 </dom-module>
 
 <script>
+    (function () {
+        var clothes = {
+            hot: {
+                male: {
+                    top: 't-shirt',
+                    bottom: 'shorts'
+                },
+                female: {
+                    top: 't-shirt',
+                    bottom: 'shorts'
+                }
+            },
+            mild: {
+                male: {
+                    top: 't-shirt',
+                    bottom: 'pants'
+                },
+                female: {
+                    top: 't-shirt',
+                    bottom: 'pants'
+                }
+            },
+            cold: {
+                male: {
+                    top: 'long-sleeves',
+                    bottom: 'pants'
+                },
+                female: {
+                    top: 'long-sleeves',
+                    bottom: 'pants'
+                }
+            }
+        };
 
-    Polymer({
-        is: 'weather-app',
+        function getClothes(temperature) {
+            if (temperature >= 70) {
+                return clothes.hot;
+            }
 
-        properties: {
-            location: String,
-            currentTemp: String,
-            icon: String
-        },
+            if (temperature >= 50) {
+                return clothes.mild;
+            }
 
-        ready: function () {
-            var self = this;
-
-            /*
-             * get the weather every 30 minutes
-             */
-            setInterval(function () {
-                self.$.weatherAjax.generateRequest();
-            }, 1000 * 60 * 30);
-        },
-
-        handleWeatherResponse: function (event) {
-            var data = event.detail.response;
-
-            this.location = data.current_observation.display_location.full;
-            this.currentTemp = Math.round(parseInt(data.current_observation.temp_f, 10));
-            this.icon = data.current_observation.icon_url;
+            return clothes.cold;
         }
-    });
 
+        Polymer({
+            is: 'weather-app',
+
+            properties: {
+                location: String,
+                currentTemp: String,
+                icon: String
+            },
+
+            ready: function () {
+                var self = this;
+
+                /*
+                 * get the weather every 30 minutes
+                 */
+                setInterval(function () {
+                    self.$.weatherAjax.generateRequest();
+                }, 1000 * 60 * 30);
+            },
+
+            handleWeatherResponse: function (event) {
+                var data = event.detail.response;
+
+                this.location = data.current_observation.display_location.full;
+                this.currentTemp = Math.round(parseInt(data.current_observation.temp_f, 10));
+                this.highTemp = Math.round(parseInt(data.forecast.simpleforecast.forecastday[0].high.fahrenheit, 10));
+                this.lowTemp = Math.round(parseInt(data.forecast.simpleforecast.forecastday[0].low.fahrenheit, 10));
+                this.icon = data.current_observation.icon_url;
+                this.clothes = getClothes(this.highTemp);
+            }
+        });
+    }());
 </script>
