@@ -18,6 +18,12 @@
         text-shadow: 1px 1px 2px #0D47A1;
     }
 
+    h1 {
+        margin-top: 0;
+        font-weight: 100;
+        font-size: 60px;
+    }
+
     .t-shirt {
         width: 200px;
     }
@@ -33,9 +39,8 @@
             on-response="handleWeatherResponse"></iron-ajax>
 
         <span>{{location}}</span>
-        <h1>{{currentTemp}}</h1>
+        <h1><span>{{currentTemp}}</span>&deg;</h1>
         <img src$="{{icon}}">
-        <h2>Clothes</h2>
         <div>{{clothes.male.top}}</div>
         <div>{{clothes.male.bottom}}</div>
         <img class="t-shirt" src="icons/t-shirt.svg">
@@ -77,6 +82,47 @@
             }
         };
 
+        var weatherIconMap = {
+            chanceflurries: 'snow',
+            chancerain: 'rain',
+            chancesleet: 'sleet',
+            chancesnow: 'snow',
+            chancestorms: 'tstorms',
+            clear: 'clear',
+            cloudy: 'cloudy',
+            flurries: 'snow',
+            fog: 'cloudy',
+            hazy: 'cloudy',
+            mostlycloudy: 'mostlysunny',
+            mostlysunny: 'mostlysunny',
+            partlycloudy: 'mostlysunny',
+            partlysunny: 'mostlysunny',
+            sleet: 'sleet',
+            rain: 'rain',
+            snow: 'snow',
+            sunny: 'clear',
+            tstorms: 'tstorms',
+            nt_chanceflurries: 'snow',
+            nt_chancerain: 'nt_rain',
+            nt_chancesleet: 'sleet',
+            nt_chancesnow: 'snow',
+            nt_chancestorms: 'tstorms',
+            nt_clear: 'nt_clear',
+            nt_cloudy: 'nt_cloudy',
+            nt_flurries: 'nt_snow',
+            nt_fog: 'nt_cloudy',
+            nt_hazy: 'nt_cloudy',
+            nt_mostlycloudy: 'nt_cloudy',
+            nt_mostlysunny: 'nt_cloudy',
+            nt_partlycloudy: 'nt_cloudy',
+            nt_partlysunny: 'nt_cloudy',
+            nt_sleet: 'nt_sleet',
+            nt_rain: 'nt_rain',
+            nt_snow: 'nt_snow',
+            nt_sunny: 'nt_clear',
+            nt_tstorms: 'tstorms',
+        };
+
         function getClothes(temperature) {
             if (temperature >= 70) {
                 return clothes.hot;
@@ -87,6 +133,10 @@
             }
 
             return clothes.cold;
+        }
+
+        function getWeatherIcon(condition) {
+            return 'icons/weather/' + weatherIconMap[condition] + '.png';
         }
 
         Polymer({
@@ -116,7 +166,7 @@
                 this.currentTemp = Math.round(parseInt(data.current_observation.temp_f, 10));
                 this.highTemp = Math.round(parseInt(data.forecast.simpleforecast.forecastday[0].high.fahrenheit, 10));
                 this.lowTemp = Math.round(parseInt(data.forecast.simpleforecast.forecastday[0].low.fahrenheit, 10));
-                this.icon = data.current_observation.icon_url;
+                this.icon = this.resolveUrl(getWeatherIcon(data.current_observation.icon));
                 this.clothes = getClothes(this.highTemp);
             }
         });
