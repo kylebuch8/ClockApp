@@ -12,7 +12,7 @@
         display: -webkit-flex;
         display: flex;
         height: 100%;
-        background: #2196F3;
+        /*background: #2196F3;*/
         color: white;
         -webkit-align-items: center;
         align-items: center;
@@ -22,6 +22,77 @@
         text-shadow: 1px 1px 2px #0D47A1;
         font-family: 'Roboto', serif;
         transition: background-color 1s ease-in-out;
+    }
+
+    .stars,
+    .twinkling {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .stars {
+        background-image: url('./images/stars.png');
+        background-color: black;
+        background-size: cover;
+        z-index: -2;
+    }
+
+    .twinkling {
+        background: transparent url(http://www.script-tutorials.com/demos/360/images/twinkling.png) repeat top center;
+        z-index: -1;
+        -moz-animation: move-twink-back 200s linear infinite;
+        -ms-animation: move-twink-back 200s linear infinite;
+        -o-animation: move-twink-back 200s linear infinite;
+        -webkit-animation: move-twink-back 200s linear infinite;
+        animation: move-twink-back 200s linear infinite;
+    }
+
+    @keyframes move-twink-back {
+        from {
+            background-position: 0 0;
+        }
+        to {
+            background-position: -10000px 5000px;
+        }
+    }
+
+    @-webkit-keyframes move-twink-back {
+        from {
+            background-position: 0 0;
+        }
+        to {
+            background-position: -10000px 5000px;
+        }
+    }
+
+    @-moz-keyframes move-twink-back {
+        from {
+            background-position: 0 0;
+        }
+        to {
+            background-position: -10000px 5000px;
+        }
+    }
+
+    @-ms-keyframes move-twink-back {
+        from {
+            background-position: 0 0;
+        }
+        to {
+            background-position: -10000px 5000px;
+        }
+    }
+
+    .night {
+        background-image: url('./images/stars.png');
+        background-color: black;
+        background-size: cover;
     }
 
     .toast {
@@ -49,6 +120,8 @@
     </style>
 
     <template>
+        <div class="stars"></div>
+        <div class="twinkling"></div>
         <span>{{time}}</span>
         <div id="toast" class="toast" on-tap="clear">Dismiss</div>
     </template>
